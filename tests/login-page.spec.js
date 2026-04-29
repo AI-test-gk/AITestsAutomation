@@ -1,0 +1,84 @@
+import LoginPage from '../src/pages/login.page';
+import {test, expect} from '../src/utils/BaseTest';
+import USER_DATA from '@/constants/user-data';
+import LOGIN_PAGE_VALUES from '@/constants/login-page-values';
+import PATH_CONSTANTS from '@/constants/path-constants';
+
+test.describe('Check login page', () => {
+    let loginPage;
+
+    test.beforeEach(async ({page, baseURL}) => {
+        loginPage = new LoginPage(page);
+        await loginPage.goto(baseURL);
+        await loginPage.waitForPageLoaded();
+    });
+
+    test('Should log in successfuly', async ({page, baseURL}) => {
+        await expect(page).toHaveURL(baseURL);
+
+        await expect(loginPage.usernameInput).toBeVisible();
+        await loginPage.usernameInput.fill(USER_DATA.sauce_user.email);
+        await expect(loginPage.passwordInput).toBeVisible();
+        await loginPage.passwordInput.fill(USER_DATA.sauce_user.password);
+        await expect(loginPage.loginButton).toBeVisible();
+        await expect(loginPage.loginButton).toHaveText(
+            LOGIN_PAGE_VALUES.loginButton
+        );
+        await loginPage.loginButton.click();
+
+        // check that we are on the inventory page
+        await expect(page).toHaveURL(
+            `${baseURL}${PATH_CONSTANTS.inventoryPagePath}`
+        );
+    });
+
+    test('Should show error message when loggin in with wrong username', async () => {
+        const wrongUsername = 'wrong_user';
+        await loginPage.login(wrongUsername, USER_DATA.sauce_user.password);
+
+        await expect(loginPage.errorMessage).toBeVisible();
+        await expect(loginPage.errorMessage).toHaveText(
+            LOGIN_PAGE_VALUES.errorMessage
+        );
+
+        await loginPage.closeErrorButton.click();
+        await expect(loginPage.errorMessage).toBeHidden();
+    });
+
+    test('Should show error message when loggin in with wrong password', async () => {
+        const wrongPassword = 'wrong_password';
+        await loginPage.login(USER_DATA.sauce_user.email, wrongPassword);
+
+        await expect(loginPage.errorMessage).toBeVisible();
+        await expect(loginPage.errorMessage).toHaveText(
+            LOGIN_PAGE_VALUES.errorMessage
+        );
+
+        await loginPage.closeErrorButton.click();
+        await expect(loginPage.errorMessage).toBeHidden();
+    });
+
+    test('Should show error message when loggin in with empty username', async () => {
+        await loginPage.login('', USER_DATA.sauce_user.password);
+
+        await expect(loginPage.errorMessage).toBeVisible();
+        await expect(loginPage.errorMessage).toHaveText(
+            LOGIN_PAGE_VALUES.usernameRequiredErrorMessage
+        );
+
+        await loginPage.closeErrorButton.click();
+        await expect(loginPage.errorMessage).toBeHidden();
+    });
+
+    test('Should show error message when loggin in with empty password', async () => {
+        await loginPage.login(USER_DATA.sauce_user.email, '');
+
+        await expect(loginPage.errorMessage).toBeVisible();
+        await expect(loginPage.errorMessage).toHaveText(
+            LOGIN_PAGE_VALUES.passwordRequiredErrorMessage
+        );
+
+        await loginPage.closeErrorButton.click();
+        await expect(loginPage.errorMessage).toBeHidden();
+    });
+});

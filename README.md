@@ -1,10 +1,12 @@
 # Playwright Test Automation Framework
 
 ## Stack
+
 - JavaScript
 - Playwright
 
 ## Project Structure
+
 - `src/pages` - Page Object classes
 - `src/components` - Reusable UI components
 - `src/utils` - Test utilities and base test setup
@@ -12,6 +14,7 @@
 - `tests/e2e` - End-to-end test specs
 
 ## Setup
+
 1. Install dependencies:
    ```bash
    npm install
@@ -22,6 +25,7 @@
    ```
 
 ## Run Tests
+
 - Headless:
   ```bash
   npm test

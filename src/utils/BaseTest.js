@@ -1,21 +1,17 @@
-const { test: base, expect } = require('@playwright/test');
+import {test as base, expect} from '@playwright/test';
 
 class BaseTest {
-  constructor(page) {
-    this.page = page;
-  }
+    constructor(page) {
+        this.page = page;
+    }
 
-  async openBaseUrl(baseUrl) {
-    await this.page.goto(baseUrl);
-  }
+    async openBaseUrl(baseUrl) {
+        await this.page.goto(baseUrl);
+    }
 }
 
 const test = base.extend({
-  // Add shared fixtures here as the framework grows.
+    // Add shared fixtures here as the framework grows.
 });
 
-module.exports = {
-  test,
-  expect,
-  BaseTest,
-};
+export {test, expect, BaseTest};
