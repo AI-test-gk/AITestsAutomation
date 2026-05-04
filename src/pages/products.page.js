@@ -1,5 +1,6 @@
-// path: src/pages/products-page.js
 import BasePage from './base.page';
+import TEST_IDS from '../constants/test-ids';
+import ProductCardComponent from '../components/product-card.component';
 
 class ProductsPage extends BasePage {
     constructor(page) {
@@ -7,16 +8,8 @@ class ProductsPage extends BasePage {
         this.page = page;
     }
 
-    async goto(baseURL) {
-        await this.page.goto(`${baseURL}inventory.html`);
-    }
-
     get pageTitle() {
-        return this.page.getByTestId('title');
-    }
-
-    get inventoryContainer() {
-        return this.page.getByTestId('inventory-container');
+        return this.page.getByTestId(TEST_IDS.common.pageTitle);
     }
 
     get inventoryList() {
@@ -24,7 +17,7 @@ class ProductsPage extends BasePage {
     }
 
     get inventoryItems() {
-        return this.page.getByTestId('inventory-item');
+        return this.page.getByTestId(TEST_IDS.products.inventoryItem);
     }
 
     get cartLink() {
@@ -43,32 +36,21 @@ class ProductsPage extends BasePage {
         return this.page.getByTestId('active-option');
     }
 
-    getProductName(productCard) {
-        return productCard.getByTestId('inventory-item-name');
-    }
-
-    getProductDescription(productCard) {
-        return productCard.getByTestId('inventory-item-desc');
-    }
-
-    getProductPrice(productCard) {
-        return productCard.getByTestId('inventory-item-price');
-    }
-
-    getAddToCartButton(productCard) {
-        return productCard.getByRole('button', {name: 'Add to cart'});
-    }
-
-    getRemoveButton(productCard) {
-        return productCard.getByRole('button', {name: 'Remove'});
+    getProductCard(productCard) {
+        return new ProductCardComponent(productCard);
     }
 
     async addToCart(productCard) {
-        await this.getAddToCartButton(productCard).click();
+        await this.getProductCard(productCard).addToCart();
     }
 
     async removeFromCart(productCard) {
-        await this.getRemoveButton(productCard).click();
+        await this.getProductCard(productCard).removeFromCartByRole();
+    }
+
+    async goToCart() {
+        await this.cartLink.click();
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
     async selectSortOption(value) {
@@ -81,7 +63,9 @@ class ProductsPage extends BasePage {
 
         for (let index = 0; index < count; index += 1) {
             const item = this.inventoryItems.nth(index);
-            const name = await this.getProductName(item).innerText();
+            const name = await this.getProductCard(item).getFieldText(
+                TEST_IDS.productFields.name
+            );
             names.push(name.trim());
         }
 
@@ -94,7 +78,9 @@ class ProductsPage extends BasePage {
 
         for (let index = 0; index < count; index += 1) {
             const item = this.inventoryItems.nth(index);
-            const priceText = await this.getProductPrice(item).innerText();
+            const priceText = await this.getProductCard(item).getFieldText(
+                TEST_IDS.productFields.price
+            );
             prices.push(Number(priceText.replace('$', '').trim()));
         }
 

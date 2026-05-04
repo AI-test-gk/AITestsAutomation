@@ -1,5 +1,5 @@
 import LoginPage from '../src/pages/login.page';
-import {test, expect} from '../src/utils/BaseTest';
+import {test, expect} from '../src/utils/base-test';
 import USER_DATA from '@/constants/user-data';
 import LOGIN_PAGE_VALUES from '@/constants/login-page-values';
 import PATH_CONSTANTS from '@/constants/path-constants';
@@ -26,7 +26,6 @@ test.describe('Check login page', () => {
         );
         await loginPage.loginButton.click();
 
-        // check that we are on the inventory page
         await expect(page).toHaveURL(
             `${baseURL}${PATH_CONSTANTS.inventoryPagePath}`
         );
@@ -36,49 +35,37 @@ test.describe('Check login page', () => {
         const wrongUsername = 'wrong_user';
         await loginPage.login(wrongUsername, USER_DATA.sauce_user.password);
 
-        await expect(loginPage.errorMessage).toBeVisible();
-        await expect(loginPage.errorMessage).toHaveText(
+        await loginPage.verifyAndDismissError(
+            expect,
             LOGIN_PAGE_VALUES.errorMessage
         );
-
-        await loginPage.closeErrorButton.click();
-        await expect(loginPage.errorMessage).toBeHidden();
     });
 
     test('Should show error message when loggin in with wrong password', async () => {
         const wrongPassword = 'wrong_password';
         await loginPage.login(USER_DATA.sauce_user.email, wrongPassword);
 
-        await expect(loginPage.errorMessage).toBeVisible();
-        await expect(loginPage.errorMessage).toHaveText(
+        await loginPage.verifyAndDismissError(
+            expect,
             LOGIN_PAGE_VALUES.errorMessage
         );
-
-        await loginPage.closeErrorButton.click();
-        await expect(loginPage.errorMessage).toBeHidden();
     });
 
     test('Should show error message when loggin in with empty username', async () => {
         await loginPage.login('', USER_DATA.sauce_user.password);
 
-        await expect(loginPage.errorMessage).toBeVisible();
-        await expect(loginPage.errorMessage).toHaveText(
+        await loginPage.verifyAndDismissError(
+            expect,
             LOGIN_PAGE_VALUES.usernameRequiredErrorMessage
         );
-
-        await loginPage.closeErrorButton.click();
-        await expect(loginPage.errorMessage).toBeHidden();
     });
 
     test('Should show error message when loggin in with empty password', async () => {
         await loginPage.login(USER_DATA.sauce_user.email, '');
 
-        await expect(loginPage.errorMessage).toBeVisible();
-        await expect(loginPage.errorMessage).toHaveText(
+        await loginPage.verifyAndDismissError(
+            expect,
             LOGIN_PAGE_VALUES.passwordRequiredErrorMessage
         );
-
-        await loginPage.closeErrorButton.click();
-        await expect(loginPage.errorMessage).toBeHidden();
     });
 });

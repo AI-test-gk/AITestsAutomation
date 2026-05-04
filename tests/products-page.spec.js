@@ -1,17 +1,21 @@
 import LoginPage from '../src/pages/login.page';
-import ProductsPage from '../src/pages/products-page';
-import {test, expect} from '../src/utils/BaseTest';
+import ProductsPage from '../src/pages/products.page';
+import CartPage from '../src/pages/cart.page';
+import {test, expect} from '../src/utils/base-test';
 import USER_DATA from '@/constants/user-data';
 import PRODUCTS_PAGE_VALUES from '@/constants/products-page-values';
 import PATH_CONSTANTS from '@/constants/path-constants';
+import TEST_IDS from '@/constants/test-ids';
 
 test.describe('Check products page', () => {
     let loginPage;
     let productsPage;
+    let cartPage;
 
     test.beforeEach(async ({page, baseURL}) => {
         loginPage = new LoginPage(page);
         productsPage = new ProductsPage(page);
+        cartPage = new CartPage(page);
 
         await loginPage.openAndLogin(
             baseURL,
@@ -42,12 +46,17 @@ test.describe('Check products page', () => {
         );
 
         const firstItem = productsPage.inventoryItems.first();
-        await expect(productsPage.getProductName(firstItem)).toBeVisible();
+        const firstProductCard = productsPage.getProductCard(firstItem);
         await expect(
-            productsPage.getProductDescription(firstItem)
+            firstProductCard.getField(TEST_IDS.productFields.name)
         ).toBeVisible();
-        await expect(productsPage.getProductPrice(firstItem)).toBeVisible();
-        await expect(productsPage.getAddToCartButton(firstItem)).toBeVisible();
+        await expect(
+            firstProductCard.getField(TEST_IDS.productFields.description)
+        ).toBeVisible();
+        await expect(
+            firstProductCard.getField(TEST_IDS.productFields.price)
+        ).toBeVisible();
+        await expect(firstProductCard.getAddToCartButton()).toBeVisible();
     });
 
     test.describe('Products sorting', () => {
@@ -129,27 +138,25 @@ test.describe('Check products page', () => {
             baseURL
         }) => {
             const firstItem = productsPage.inventoryItems.first();
+            const firstProductCard = productsPage.getProductCard(firstItem);
 
-            await expect(
-                productsPage.getAddToCartButton(firstItem)
-            ).toBeVisible();
+            await expect(firstProductCard.getAddToCartButton()).toBeVisible();
             await productsPage.addToCart(firstItem);
 
             await expect(productsPage.cartBadge).toHaveText(
                 PRODUCTS_PAGE_VALUES.cartBadgeAfterAdd
             );
 
-            await expect(productsPage.getRemoveButton(firstItem)).toBeVisible();
             await expect(
-                productsPage.getAddToCartButton(firstItem)
-            ).toBeHidden();
+                firstProductCard.getRemoveButtonByRole()
+            ).toBeVisible();
+            await expect(firstProductCard.getAddToCartButton()).toBeHidden();
 
-            await productsPage.cartLink.click();
-            await page.waitForLoadState('domcontentloaded');
-            await expect(page).toHaveURL(
+            await productsPage.goToCart();
+            await expect(cartPage.page).toHaveURL(
                 `${baseURL}${PATH_CONSTANTS.cartPagePath}`
             );
-            await expect(page.getByTestId('cart-item')).toHaveCount(
+            await expect(cartPage.cartItems).toHaveCount(
                 PRODUCTS_PAGE_VALUES.cartItemsCountAfterAdd
             );
         });
@@ -159,6 +166,7 @@ test.describe('Check products page', () => {
             baseURL
         }) => {
             const firstItem = productsPage.inventoryItems.first();
+            const firstProductCard = productsPage.getProductCard(firstItem);
 
             await productsPage.addToCart(firstItem);
             await expect(productsPage.cartBadge).toHaveText(
@@ -168,16 +176,13 @@ test.describe('Check products page', () => {
             await productsPage.removeFromCart(firstItem);
 
             await expect(productsPage.cartBadge).toBeHidden();
-            await expect(
-                productsPage.getAddToCartButton(firstItem)
-            ).toBeVisible();
+            await expect(firstProductCard.getAddToCartButton()).toBeVisible();
 
-            await productsPage.cartLink.click();
-            await page.waitForLoadState('domcontentloaded');
-            await expect(page).toHaveURL(
+            await productsPage.goToCart();
+            await expect(cartPage.page).toHaveURL(
                 `${baseURL}${PATH_CONSTANTS.cartPagePath}`
             );
-            await expect(page.getByTestId('cart-item')).toHaveCount(
+            await expect(cartPage.cartItems).toHaveCount(
                 PRODUCTS_PAGE_VALUES.cartItemsCountAfterRemove
             );
         });

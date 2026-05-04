@@ -1,9 +1,6 @@
 import BasePage from './base.page';
 
 class LoginPage extends BasePage {
-    /**
-     * @param {import('@playwright/test').Page} page
-     */
     constructor(page) {
         super();
         this.page = page;
@@ -43,6 +40,13 @@ class LoginPage extends BasePage {
         await this.goto(baseURL);
         await this.waitForPageLoaded();
         await this.login(username, password);
+    }
+
+    async verifyAndDismissError(expect, expectedText) {
+        await expect(this.errorMessage).toBeVisible();
+        await expect(this.errorMessage).toHaveText(expectedText);
+        await this.closeErrorButton.click();
+        await expect(this.errorMessage).toBeHidden();
     }
 }
 

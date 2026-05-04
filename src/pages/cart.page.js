@@ -1,16 +1,15 @@
 import BasePage from './base.page';
+import TEST_IDS from '../constants/test-ids';
+import ProductCardComponent from '../components/product-card.component';
 
 class CartPage extends BasePage {
-    /**
-     * @param {import('@playwright/test').Page} page
-     */
     constructor(page) {
         super();
         this.page = page;
     }
 
     get pageTitle() {
-        return this.page.getByTestId('title');
+        return this.page.getByTestId(TEST_IDS.common.pageTitle);
     }
 
     get cartList() {
@@ -18,7 +17,15 @@ class CartPage extends BasePage {
     }
 
     get cartItems() {
-        return this.page.getByTestId('inventory-item');
+        return this.page.getByTestId(TEST_IDS.products.inventoryItem);
+    }
+
+    get cartItemQuantityValues() {
+        return this.page.getByTestId('item-quantity');
+    }
+
+    get cartItemTitleLinks() {
+        return this.page.getByTestId(TEST_IDS.productFields.name);
     }
 
     get quantityLabel() {
@@ -54,7 +61,7 @@ class CartPage extends BasePage {
     }
 
     get checkoutOverviewItems() {
-        return this.page.getByTestId('inventory-item');
+        return this.page.getByTestId(TEST_IDS.products.inventoryItem);
     }
 
     get paymentInfoValue() {
@@ -69,12 +76,12 @@ class CartPage extends BasePage {
         return this.page.getByTestId('finish');
     }
 
-    getRemoveButton(productCard) {
-        return productCard.getByRole('button', {name: 'Remove'});
+    getProductCard(productCard) {
+        return new ProductCardComponent(productCard);
     }
 
     async removeFromCart(productCard) {
-        await this.getRemoveButton(productCard).click();
+        await this.getProductCard(productCard).removeFromCartByTestPrefix();
     }
 
     async fillCheckoutInformation(firstName, lastName, postalCode) {
