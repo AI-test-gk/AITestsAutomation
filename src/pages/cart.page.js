@@ -60,6 +60,10 @@ class CartPage extends BasePage {
         return this.page.getByTestId('continue');
     }
 
+    get checkoutErrorMessage() {
+        return this.page.getByTestId('error');
+    }
+
     get checkoutOverviewItems() {
         return this.page.getByTestId(TEST_IDS.products.inventoryItem);
     }

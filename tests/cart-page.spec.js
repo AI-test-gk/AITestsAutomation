@@ -122,6 +122,40 @@ test.describe('Check cart page', () => {
         await expect(productDetailsPage.backToProductsButton).toBeVisible();
     });
 
+    test('Should show validation errors when continuing checkout with missing fields', async ({
+        page,
+        baseURL
+    }) => {
+        await cartPage.checkoutButton.click();
+        await expect(page).toHaveURL(
+            `${baseURL}${PATH_CONSTANTS.checkoutStepOnePath}`
+        );
+
+        await cartPage.checkoutContinueButton.click();
+        await expect(cartPage.checkoutErrorMessage).toBeVisible();
+        await expect(cartPage.checkoutErrorMessage).toHaveText(
+            CART_PAGE_VALUES.checkoutFirstNameRequiredError
+        );
+
+        await cartPage.checkoutFirstNameInput.fill(
+            USER_DATA.checkout_user.firstName
+        );
+        await cartPage.checkoutContinueButton.click();
+        await expect(cartPage.checkoutErrorMessage).toBeVisible();
+        await expect(cartPage.checkoutErrorMessage).toHaveText(
+            CART_PAGE_VALUES.checkoutLastNameRequiredError
+        );
+
+        await cartPage.checkoutLastNameInput.fill(
+            USER_DATA.checkout_user.lastName
+        );
+        await cartPage.checkoutContinueButton.click();
+        await expect(cartPage.checkoutErrorMessage).toBeVisible();
+        await expect(cartPage.checkoutErrorMessage).toHaveText(
+            CART_PAGE_VALUES.checkoutPostalCodeRequiredError
+        );
+    });
+
     test('Should complete checkout navigation and display overview details', async ({
         page,
         baseURL

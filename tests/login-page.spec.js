@@ -1,4 +1,5 @@
 import LoginPage from '../src/pages/login.page';
+import ProductsPage from '../src/pages/products.page';
 import {test, expect} from '../src/utils/base-test';
 import USER_DATA from '@/constants/user-data';
 import LOGIN_PAGE_VALUES from '@/constants/login-page-values';
@@ -67,5 +68,25 @@ test.describe('Check login page', () => {
             expect,
             LOGIN_PAGE_VALUES.passwordRequiredErrorMessage
         );
+    });
+
+    test('Should log out and redirect to login page with visible form elements', async ({
+        page,
+        baseURL
+    }) => {
+        await loginPage.openAndLogin(
+            baseURL,
+            USER_DATA.sauce_user.email,
+            USER_DATA.sauce_user.password
+        );
+
+        const productsPage = new ProductsPage(page);
+        await productsPage.sideMenuButton.click();
+        await productsPage.logoutLink.click();
+
+        await expect(page).toHaveURL(baseURL);
+        await expect(loginPage.usernameInput).toBeVisible();
+        await expect(loginPage.passwordInput).toBeVisible();
+        await expect(loginPage.loginButton).toBeVisible();
     });
 });

@@ -36,6 +36,14 @@ class ProductsPage extends BasePage {
         return this.page.getByTestId('active-option');
     }
 
+    get sideMenuButton() {
+        return this.page.getByRole('button', {name: 'Open Menu'});
+    }
+
+    get logoutLink() {
+        return this.page.getByTestId('logout-sidebar-link');
+    }
+
     getProductCard(productCard) {
         return new ProductCardComponent(productCard);
     }
