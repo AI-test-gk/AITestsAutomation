@@ -2,3 +2,9 @@ node_modules/
 playwright-report/
 test-results/
 .env
+
+# VS Code user settings (machine-specific)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
