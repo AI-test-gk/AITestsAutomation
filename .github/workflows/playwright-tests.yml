@@ -18,6 +18,16 @@ jobs:
     name: playwright-tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    concurrency:
+      group: 'pages'
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url }}
     env:
       CI: true
 
@@ -43,6 +53,7 @@ jobs:
 
       # Run Playwright test suite in parallel
       - name: Run Playwright tests
+        id: run-playwright-tests
         run: npx playwright test
 
       # Always upload Playwright HTML report
@@ -64,3 +75,133 @@ jobs:
             test-results/**/trace*.zip
             test-results
           if-no-files-found: warn
+
+      # Send Teams notification only when the workflow fails
+      - name: Notify Microsoft Teams on failure
+        if: failure()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title || 'N/A (not a pull_request event)' }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TEAMS_WEBHOOK_URL" ]; then
+            echo "TEAMS_WEBHOOK_URL is not set; skipping Teams notification."
+            exit 0
+          fi
+
+          payload=$(python3 - <<'PY'
+          import json
+          import os
+
+          text = (
+              "Playwright workflow failed.\n"
+              f"PR Title: {os.getenv('PR_TITLE', '')}\n"
+              f"PR Author: {os.getenv('PR_AUTHOR', '')}\n"
+              f"Branch: {os.getenv('BRANCH_NAME', '')}\n"
+              f"Run: {os.getenv('RUN_URL', '')}"
+          )
+
+          print(json.dumps({"text": text}))
+          PY
+          )
+
+          curl -sS -H "Content-Type: application/json" -d "$payload" "$TEAMS_WEBHOOK_URL"
+
+      - name: Checkout gh-pages history
+        if: always() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: .tmp-gh-pages
+
+      - name: Prepare Pages history
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_CONCLUSION: ${{ steps.run-playwright-tests.outcome }}
+        run: |
+          mkdir -p playwright-report
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const reportDir = 'playwright-report';
+          const targetHistory = path.join(reportDir, 'history.json');
+          const previousHistory = path.join('.tmp-gh-pages', 'history.json');
+
+          let history = [];
+          if (fs.existsSync(previousHistory)) {
+            try {
+              const parsed = JSON.parse(fs.readFileSync(previousHistory, 'utf8'));
+              history = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              history = [];
+            }
+          }
+
+          let testSummary = null;
+          const reportDataDir = path.join(reportDir, 'data');
+          if (fs.existsSync(reportDataDir)) {
+            try {
+              const files = fs.readdirSync(reportDataDir).filter((f) => f.endsWith('.json'));
+              testSummary = files.length > 0 ? `Playwright report data files: ${files.length}` : null;
+            } catch {
+              testSummary = null;
+            }
+          }
+
+          const record = {
+            timestamp: new Date().toISOString(),
+            runUrl: process.env.RUN_URL,
+            commitSha: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+            conclusion: process.env.JOB_CONCLUSION || 'unknown',
+            testSummary
+          };
+
+          history.push(record);
+          fs.writeFileSync(targetHistory, JSON.stringify(history, null, 2));
+          NODE
+
+      - name: Upload Pages artifact
+        if: always() && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report/
+
+      - name: Deploy to GitHub Pages
+        if: always() && github.ref == 'refs/heads/main'
+        id: deploy-pages
+        uses: actions/deploy-pages@v4
+
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    continue-on-error: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit and append summary
+        run: |
+          set +e
+          npm audit --audit-level=high --json > audit.json
+          audit_exit=$?
+
+          node -e "const fs=require('fs'); const summary=process.env.GITHUB_STEP_SUMMARY; let data=null; try{data=JSON.parse(fs.readFileSync('audit.json','utf8'));}catch(e){} if(!summary){process.exit(0);} if(!data||!data.metadata||!data.metadata.vulnerabilities){fs.appendFileSync(summary, '## Security Scan\nUnable to parse npm audit output.\n'); process.exit(0);} const v=data.metadata.vulnerabilities; const critical=v.critical||0; const high=v.high||0; const moderate=v.moderate||0; const low=v.low||0; const total=v.total||0; const status=(critical>0||high>0)?'Failed':'Passed'; fs.appendFileSync(summary, `## Security Scan\nStatus: ${status}\n\n- Critical: ${critical}\n- High: ${high}\n- Moderate: ${moderate}\n- Low: ${low}\n- Total: ${total}\n`);"
+
+          exit $audit_exit
